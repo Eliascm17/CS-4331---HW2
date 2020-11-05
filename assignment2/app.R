@@ -50,9 +50,14 @@ body <- dashboardBody(fluidRow(
             plotOutput("averageFacePicker") %>% withSpinner(color = "#0dc5c1"),
             
             
-            h3('The average face from all images'),
+            h3('The average face image from all images'),
             plotOutput("averageFace") %>% withSpinner(color = "#0dc5c1"),
             
+            h3('Magnitude of eigenvalues'),
+            plotOutput("magnitude") %>% withSpinner(color = "#0dc5c1"),
+            
+            h3('Plotting of all of the eigenvectors'),
+            plotOutput("plotOfEigenvectors") %>% withSpinner(color = "#0dc5c1"),
             
         )
     )
@@ -139,7 +144,7 @@ shinyApp(
         newdata <- NULL
         
         # Rotate every image and save to a new file for easy display in R
-        abc <- reactive({
+        average <- reactive({
             for (i in 1:nrow(dataframe()))
             {
                 # Rotated Image 90 degree
@@ -161,12 +166,77 @@ shinyApp(
         output$averageFace <- renderPlot({
             if (!is.null(input$datafile)) {
                 par(mfrow = c(1, 3))
-                average_face = colMeans(abc())
+                average_face = colMeans(average())
                 AVF = matrix(average_face, nrow = 1, byrow = T)
                 plt_img(matrix(average_face, nrow = 64, byrow = T))
             }
         })
         
+        output$magnitude <- renderPlot({
+            if (!is.null(input$datafile)) {
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                
+                par(mfrow = c(1, 2))
+                par(mar = c(2.5, 2.5, 2.5, 2.5))
+                y = eigenvalues[1:40]
+                # First 40 eigenvalues dominate
+                plot(
+                    1:40,
+                    y,
+                    type = "o",
+                    log = "y",
+                    main = "Magnitude of the 40 biggest eigenvalues",
+                    xlab = "Eigenvalue #",
+                    ylab = "Magnitude"
+                )
+                
+            }
+        })
         
+        
+        output$plotOfEigenvectors <- renderPlot({
+            if (!is.null(input$datafile)) {
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                
+                par(mfrow = c(3, 6))
+                par(mar = c(0.2, 0.2, 0.2, 0.2))
+                for (i in 1:6) {
+                    plt_img(matrix(
+                        as.numeric(eigenvectors[, i]),
+                        nrow = 64,
+                        byrow = T
+                    ))
+                }
+            }
+            
+        })
     }
 )
