@@ -47,13 +47,6 @@ body <- dashboardBody(fluidRow(
             
             
             h3('Taking the average mean of the faces and displaying them:'),
-            sliderInput(
-                "projectionSlider",
-                "pick one of 40 faces using the slider:",
-                min = 1,
-                max = 40,
-                value = 1
-            ),
             plotOutput("averageFacePicker") %>% withSpinner(color = "#0dc5c1"),
             
             
@@ -67,13 +60,6 @@ body <- dashboardBody(fluidRow(
             plotOutput("plotOfEigenvectors") %>% withSpinner(color = "#0dc5c1"),
             
             h3('Projection coefficients in eigen space in photos'),
-            sliderInput(
-                "projectionSlider",
-                "Use The slider to select from photos 1-40:",
-                min = 1,
-                max = 20,
-                value = 1
-            ),
             plotOutput("projectionGraph") %>% withSpinner(color = "#0dc5c1"),
             
             h3("Reconstruction of the photo from the eigenvector space"),
@@ -161,8 +147,7 @@ shinyApp(
                 par(mfrow = c(1, 3))
                 # par(mar=c(0.1,0.1,0.1,0.1))
                 
-                AV1 = colMeans(data.matrix(dataframe()[(10 * (input$selecter -
-                                                                  1)) + 1:(10 * (input$selecter - 1)) + 10,]))
+                AV1 = colMeans(data.matrix(dataframe()[11:20,]))
                 face_1 <-
                     t(apply(matrix(
                         AV1, nrow = 64, byrow = T
@@ -305,7 +290,7 @@ shinyApp(
                 eigenvectors <- eigs$vectors
                 
                 projection1 <-
-                    data.matrix(average()[input$projectionSlider, ]) %*% eigenvectors
+                    data.matrix(average()[1, ]) %*% eigenvectors
                 
                 barplot(
                     projection1,
