@@ -22,7 +22,7 @@ body <- dashboardBody(fluidRow(
                 'Choose CSV file',
                 accept = c('csv', 'comma-separated-values', '.csv')
             ),
-            h5('*This program assumes that the data is in the shape of 64x64', style =
+            h5('*This program assumes that the data is in the shape of 4096x40', style =
                    "color:red"),
         ),
         tabPanel(
@@ -47,6 +47,13 @@ body <- dashboardBody(fluidRow(
             
             
             h3('Taking the average mean of the faces and displaying them:'),
+            sliderInput(
+                "projectionSlider",
+                "pick one of 40 faces using the slider:",
+                min = 1,
+                max = 40,
+                value = 1
+            ),
             plotOutput("averageFacePicker") %>% withSpinner(color = "#0dc5c1"),
             
             
@@ -85,6 +92,15 @@ body <- dashboardBody(fluidRow(
             
             h5("reconstructed + average face"),
             plotOutput("reconstructedAverageFace") %>% withSpinner(color = "#0dc5c1"),
+            
+            h3("Simple Classifier based on the Euclidean distance"),
+            plotOutput("euclideanClassifier") %>% withSpinner(color = "#0dc5c1"),
+            
+            h3("Eigen Values Heatmap"),
+            plotOutput("heatmap1") %>% withSpinner(color = "#0dc5c1"),
+            
+            h3("Eigen Vectors Heatmap"),
+            plotOutput("heatmap2") %>% withSpinner(color = "#0dc5c1"),
             
         )
     )
@@ -145,7 +161,8 @@ shinyApp(
                 par(mfrow = c(1, 3))
                 # par(mar=c(0.1,0.1,0.1,0.1))
                 
-                AV1 = colMeans(data.matrix(dataframe()[11:20,]))
+                AV1 = colMeans(data.matrix(dataframe()[(10 * (input$selecter -
+                                                                  1)) + 1:(10 * (input$selecter - 1)) + 10,]))
                 face_1 <-
                     t(apply(matrix(
                         AV1, nrow = 64, byrow = T
@@ -443,5 +460,95 @@ shinyApp(
                 ))
             }
         })
+        
+        output$euclideanClassifier <- renderPlot({
+            if (!is.null(input$datafile)) {
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                # New photo under test, say, 142nd photo
+                # Transform onto eigen space to find the coefficients
+                PF1 <- data.matrix(average()[142,]) %*% eigenvectors
+                
+                # Transform all the traning photos onto eigen space and get the coefficients
+                PFall <- data.matrix(average()) %*% eigenvectors
+                
+                # Find the simple difference and multiplied by itself to avoid negative value
+                test <- matrix(rep(1, 400), nrow = 400, byrow = T)
+                test_PF1 <- test %*% PF1
+                Diff <- PFall - test_PF1
+                y <- (rowSums(Diff) * rowSums(Diff))
+                
+                # Find the minimum number to match the photo in the files
+                x = c(1:400)
+                newdf = data.frame(cbind(x, y))
+                
+                the_number = newdf$x[newdf$y == min(newdf$y)]
+                
+                par(mfrow = c(1, 1))
+                par(mar = c(1, 1, 1, 1))
+                barplot(y, main = "Similarity Plot: 0 = Most Similar")
+                
+            }
+        })
+        
+        output$heatmap1 <- renderPlot({
+            dataForScale <- data.matrix(average())
+            scaledData <- scale(dataForScale)
+            rows <- nrow(dataForScale)
+            
+            covarianceMatrix <-
+                (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+            
+            covariancePopulation <-
+                (rows) ^ -1 * t(scaledData) %*% scaledData
+            
+            eigs <- eigs(covarianceMatrix, 40, which = "LM")
+            
+            eigenvalues <- eigs$values
+            
+            eigenvectors <- eigs$vectors
+            
+            if (!is.null(input$datafile)){
+                matrix <- cbind(eigenvalues)
+                plot(matrix,  main="Eigen Values heatmap", xlab="", ylab="")
+            }
+        })
+        
+        output$heatmap2 <- renderPlot({
+            dataForScale <- data.matrix(average())
+            scaledData <- scale(dataForScale)
+            rows <- nrow(dataForScale)
+            
+            covarianceMatrix <-
+                (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+            
+            covariancePopulation <-
+                (rows) ^ -1 * t(scaledData) %*% scaledData
+            
+            eigs <- eigs(covarianceMatrix, 40, which = "LM")
+            
+            eigenvalues <- eigs$values
+            
+            eigenvectors <- eigs$vectors
+            
+            if (!is.null(input$datafile)){
+                matrix <- cbind(eigenvectors)
+                plot(matrix,  main="Eigen Vectors heatmap", xlab="", ylab="")
+            }
+        })
+        
     }
 )
