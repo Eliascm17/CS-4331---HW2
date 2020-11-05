@@ -71,9 +71,24 @@ body <- dashboardBody(fluidRow(
             
             h3("Reconstruction of the photo from the eigenvector space"),
             plotOutput("reconstruction") %>% withSpinner(color = "#0dc5c1"),
+            
+            h3("Add the average face"),
+            
+            h5("original"),
+            plotOutput("originalFace") %>% withSpinner(color = "#0dc5c1"),
+            
+            h5("average face"),
+            plotOutput("averageFaceeeeeeee") %>% withSpinner(color = "#0dc5c1"),
+            
+            h5("reconstructed from eigen space"),
+            plotOutput("reconstructedFace") %>% withSpinner(color = "#0dc5c1"),
+            
+            h5("reconstructed + average face"),
+            plotOutput("reconstructedAverageFace") %>% withSpinner(color = "#0dc5c1"),
+            
         )
     )
-),)
+), )
 
 shinyApp(
     ui = dashboardPage(
@@ -110,14 +125,14 @@ shinyApp(
                 # par(mar=c(0.1,0.1,0.1,0.1))
                 
                 image <-
-                    matrix(as.numeric(dataframe()[1,]),
+                    matrix(as.numeric(dataframe()[1, ]),
                            nrow = 64,
                            byrow = T)
                 plt_img(image)
                 
                 rotate_image <-
                     t(apply(matrix(
-                        as.numeric(dataframe()[1,]),
+                        as.numeric(dataframe()[1, ]),
                         nrow = 64,
                         byrow = T
                     ), 2, rev))
@@ -130,14 +145,14 @@ shinyApp(
                 par(mfrow = c(1, 3))
                 # par(mar=c(0.1,0.1,0.1,0.1))
                 
-                AV1 = colMeans(data.matrix(dataframe()[11:20, ]))
+                AV1 = colMeans(data.matrix(dataframe()[11:20,]))
                 face_1 <-
                     t(apply(matrix(
                         AV1, nrow = 64, byrow = T
                     ), 2, rev))
                 plt_img(face_1)
                 
-                AV2 = colMeans(data.matrix(dataframe()[21:30, ]))
+                AV2 = colMeans(data.matrix(dataframe()[21:30,]))
                 face_1 <-
                     t(apply(matrix(
                         AV2, nrow = 64, byrow = T
@@ -163,7 +178,7 @@ shinyApp(
                 c <-
                     as.numeric((apply(
                         matrix(
-                            as.numeric(dataframe()[i, ]),
+                            as.numeric(dataframe()[i,]),
                             nrow = 64,
                             byrow = T
                         ), 2, rev
@@ -273,7 +288,7 @@ shinyApp(
                 eigenvectors <- eigs$vectors
                 
                 projection1 <-
-                    data.matrix(average()[input$projectionSlider,]) %*% eigenvectors
+                    data.matrix(average()[input$projectionSlider, ]) %*% eigenvectors
                 
                 barplot(
                     projection1,
@@ -290,7 +305,7 @@ shinyApp(
         
         output$reconstruction <- renderPlot({
             if (!is.null(input$datafile)) {
-                par(mfrow = c(1,4))
+                par(mfrow = c(1, 4))
                 # par(mar = c(1, 1, 1, 1))
                 
                 dataForScale <- data.matrix(average())
@@ -311,13 +326,13 @@ shinyApp(
                 
                 # 1st person 1st photo
                 plt_img(matrix(
-                    as.numeric(average()[1,]),
+                    as.numeric(average()[1, ]),
                     nrow = 64,
                     byrow = T
                 ))
                 
                 # 1st person project into eigen space and reconstruct
-                PF1 <- data.matrix(average()[1, ]) %*% eigenvectors
+                PF1 <- data.matrix(average()[1,]) %*% eigenvectors
                 RE1 <- PF1 %*% t(eigenvectors)
                 plt_img(matrix(
                     as.numeric(RE1),
@@ -327,13 +342,13 @@ shinyApp(
                 
                 # 2nd person 1st photo
                 plt_img(matrix(
-                    as.numeric(average()[11,]),
+                    as.numeric(average()[11, ]),
                     nrow = 64,
                     byrow = T
                 ))
                 
                 # 2nd persoon project into eigen space and reconstruct
-                PF2 <- data.matrix(average()[11, ]) %*% eigenvectors
+                PF2 <- data.matrix(average()[11,]) %*% eigenvectors
                 RE2 <- PF2 %*% t(eigenvectors)
                 plt_img(matrix(
                     as.numeric(RE2),
@@ -342,6 +357,91 @@ shinyApp(
                 ))
             }
             
+        })
+        
+        
+        output$originalFace <- renderPlot({
+            if (!is.null(input$datafile)) {
+                par(mfrow = c(1, 3))
+                plt_img(matrix(
+                    as.numeric(average()[1, ]),
+                    nrow = 64,
+                    byrow = T
+                ))
+            }
+        })
+        
+        output$averageFaceeeeeeee <- renderPlot({
+            if (!is.null(input$datafile)) {
+                par(mfrow = c(1, 3))
+                average_face = colMeans(average())
+                AVF = matrix(average_face, nrow = 1, byrow = T)
+                plt_img(matrix(average_face, nrow = 64, byrow = T))
+            }
+        })
+        
+        output$reconstructedFace <- renderPlot({
+            if (!is.null(input$datafile)) {
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                
+                par(mfrow = c(1, 3))
+                PF1 <- data.matrix(average()[1,]) %*% eigenvectors
+                RE1 <- PF1 %*% t(eigenvectors)
+                plt_img(matrix(
+                    as.numeric(RE1),
+                    nrow = 64,
+                    byrow = T
+                ))
+                
+            }
+        })
+        
+        output$reconstructedAverageFace <- renderPlot({
+            if (!is.null(input$datafile)) {
+                par(mfrow = c(1, 3))
+                
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                
+                average_face = colMeans(average())
+                AVF = matrix(average_face, nrow = 1, byrow = T)
+                PF1 <- data.matrix(average()[1,]) %*% eigenvectors
+                RE1 <- PF1 %*% t(eigenvectors)
+                RE1AVF = RE1 + AVF
+                
+                plt_img(matrix(
+                    as.numeric(RE1AVF),
+                    nrow = 64,
+                    byrow = T
+                ))
+            }
         })
     }
 )
