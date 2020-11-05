@@ -59,6 +59,13 @@ body <- dashboardBody(fluidRow(
             h3('Plotting of all of the eigenvectors'),
             plotOutput("plotOfEigenvectors") %>% withSpinner(color = "#0dc5c1"),
             
+            h3('Projection coefficients in eigen space in photos'),
+            h5('Use The slider to select from photos 1-40'),
+            sliderInput("projectionSlider", "Number of observations:",
+                        min = 1, max = 20, value = 1
+            ),
+            plotOutput("projectionGraph") %>% withSpinner(color = "#0dc5c1"),
+            
         )
     )
 ), )
@@ -235,6 +242,41 @@ shinyApp(
                         byrow = T
                     ))
                 }
+            }
+            
+        })
+        
+        output$projectionGraph <- renderPlot({
+            if (!is.null(input$datafile)) {
+                par(mfrow = c(1, 3))
+                # par(mar=c(2,2,2,2))
+                
+                dataForScale <- data.matrix(average())
+                scaledData <- scale(dataForScale)
+                rows <- nrow(dataForScale)
+                
+                covarianceMatrix <-
+                    (rows - 1) ^ -1 * t(scaledData) %*% scaledData
+                
+                covariancePopulation <-
+                    (rows) ^ -1 * t(scaledData) %*% scaledData
+                
+                eigs <- eigs(covarianceMatrix, 40, which = "LM")
+                
+                eigenvalues <- eigs$values
+                
+                eigenvectors <- eigs$vectors
+                
+                projection1 <- data.matrix(average()[input$projectionSlider, ]) %*% eigenvectors
+                
+                barplot(
+                    projection1,
+                    main = "",
+                    col = "blue",
+                    ylim = c(-40, 10)
+                )
+                legend("topright",legend = "Photo Projection" )
+                
             }
             
         })
